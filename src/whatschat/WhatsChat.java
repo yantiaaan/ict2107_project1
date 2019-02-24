@@ -13,6 +13,7 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -22,7 +23,6 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -39,9 +39,6 @@ public class WhatsChat extends JFrame {
 	User user = new User();
 	Network network = new Network();
 	Group group = new Group(network);
-	
-	JLabel lblUserID;
-	JLabel lblUserDescription;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -60,6 +57,7 @@ public class WhatsChat extends JFrame {
 		network.connectBroadcast();
 		MulticastSocket broadcastSocket = network.getBroadcastSocket();
 		network.sendBroadcastMessage("GetOnlineUsers");
+		user.setCurrentGroup(null);
 		
 		/* ------------------------------------------ START OF MAIN ------------------------------------------ */
 		
@@ -153,9 +151,7 @@ public class WhatsChat extends JFrame {
 						}
 						
 						network.sendBroadcastMessage("UpdateUser:" + user.getUser() + ":" + txtEditName.getText() + ":" + des);
-						
-						lblUserID.setText(txtEditName.getText());
-						lblUserDescription.setText(txtEditDescription.getText());
+
 						editFrame.dispose();
 					}
 				});
@@ -185,6 +181,21 @@ public class WhatsChat extends JFrame {
 		JMenuItem addGroup = new JMenuItem("Create Group");
 		groupMenu.add(addGroup);
 		
+		JMenuItem addMember = new JMenuItem("Add Member(s)");
+		groupMenu.add(addMember);
+		
+		JMenuItem deleteMember = new JMenuItem("Delete Member(s)");
+		groupMenu.add(deleteMember);
+		
+		JMenuItem editGroup = new JMenuItem("Edit Group");
+		groupMenu.add(editGroup);
+		
+		JMenuItem leaveGroup = new JMenuItem("Leave Group");
+		groupMenu.add(leaveGroup);
+		
+		JMenuItem deleteGroup = new JMenuItem("Delete Group");
+		groupMenu.add(deleteGroup);
+		
 		addGroup.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String groupName = JOptionPane.showInputDialog(main, "Enter group name");
@@ -209,11 +220,51 @@ public class WhatsChat extends JFrame {
 			}
 		});
 		
-		JMenuItem editGroup = new JMenuItem("Edit Group");
-		groupMenu.add(editGroup);
+		editGroup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String newGroupName = JOptionPane.showInputDialog(main, "Rename group name for " + user.getCurrentGroup());
+				
+				if (!newGroupName.isEmpty()) {
+					network.sendBroadcastMessage("CheckGroupName:" + newGroupName);
+					
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException ie) {
+						ie.printStackTrace();
+					} 
+					
+					if (!group.isGroupNameTaken()) {
+						network.sendBroadcastMessage("UpdateGroupName:" + user.getCurrentGroup() + ":" + newGroupName);
+						JOptionPane.showMessageDialog(main, "Group has been updated successfully", "Success", JOptionPane.PLAIN_MESSAGE);
+					} else {
+						JOptionPane.showMessageDialog(main, "Group name has been taken", "Error", JOptionPane.ERROR_MESSAGE);
+					}		
+					
+				}
+			}
+		});
 		
-		JMenuItem deleteGroup = new JMenuItem("Delete Group");
-		groupMenu.add(deleteGroup);
+		leaveGroup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to leave " + user.getCurrentGroup() + "?", "Leave Group", JOptionPane.YES_NO_OPTION);
+				if (option == JOptionPane.YES_OPTION) {
+					network.sendBroadcastMessage("LeaveGroup:" + user.getCurrentGroup() + ":" + user.getUser());
+					JOptionPane.showMessageDialog(main, "You have left the group successfully", "Success", JOptionPane.PLAIN_MESSAGE);
+				
+				}
+				
+			}
+		});
+		
+		deleteGroup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to delete " + user.getCurrentGroup() + "?", "Delete Group", JOptionPane.YES_NO_OPTION);
+				if (option == JOptionPane.YES_OPTION) {
+					network.sendBroadcastMessage("DeleteGroup:" + user.getCurrentGroup());
+					JOptionPane.showMessageDialog(main, "Group has been deleted successfully", "Success", JOptionPane.PLAIN_MESSAGE);
+				}
+			}
+		});
 		
 		JPanel userPanel = new JPanel();
 		userPanel.setBounds(15, 47, 320, 581);
@@ -228,11 +279,11 @@ public class WhatsChat extends JFrame {
 		lblUserImage.setBounds(15, 34, 102, 102);
 		userPanel.add(lblUserImage);
 		
-		lblUserID = new JLabel("User ID");
+		JLabel lblUserID = new JLabel("User ID");
 		lblUserID.setBounds(132, 34, 173, 20);
 		userPanel.add(lblUserID);
 		
-		lblUserDescription = new JLabel("User Description");
+		JLabel lblUserDescription = new JLabel("User Description");
 		lblUserDescription.setBounds(132, 70, 173, 66);
 		userPanel.add(lblUserDescription);
 		
@@ -248,6 +299,10 @@ public class WhatsChat extends JFrame {
 		JList<String> listUsers = new JList<String>(user.getAllUsers());
 		listUsers.setBounds(15, 51, 255, 280);
 		userTab.add(listUsers);
+		
+		JLabel lblOnlineUsers = new JLabel("1 Online Users");
+		lblOnlineUsers.setBounds(15, 16, 255, 20);
+		userTab.add(lblOnlineUsers);
 		
 		listUsers.addMouseListener(new MouseAdapter() {
 		    public void mouseClicked(MouseEvent evt) {
@@ -288,10 +343,6 @@ public class WhatsChat extends JFrame {
 		    }
 		});
 		
-		JLabel lblOnlineUsers = new JLabel("1 Online Users");
-		lblOnlineUsers.setBounds(15, 16, 255, 20);
-		userTab.add(lblOnlineUsers);
-		
 		JPanel groupTab = new JPanel();
 		groupTab.setBackground(Color.white);
 		groupTab.setLayout(null);
@@ -300,6 +351,15 @@ public class WhatsChat extends JFrame {
 		JList<String> listGroups = new JList<String>(group.getAllGroupsByUserId(user.getUser()));
 		listGroups.setBounds(15, 16, 255, 315);
 		groupTab.add(listGroups);
+		
+		listGroups.addMouseListener(new MouseAdapter() {
+		    public void mouseClicked(MouseEvent evt) {
+		        if (evt.getClickCount() == 2) {
+		        	user.setCurrentGroup(listGroups.getSelectedValue());
+		        	network.sendBroadcastMessage("RefreshGroup");
+		        }
+		    }
+		});
 		
 		JPanel chatPanel = new JPanel();
 		chatPanel.setBackground(Color.white);
@@ -323,28 +383,60 @@ public class WhatsChat extends JFrame {
 		txtMessage.setColumns(10);
 		
 		JButton btnSend = new JButton("Send");
-		btnSend.setEnabled(false);
 		btnSend.setBounds(455, 535, 143, 30);
 		chatPanel.add(btnSend);
 		
 		TitledBorder title = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.gray), "Members");
 		title.setTitleJustification(TitledBorder.CENTER);
-		JPanel panel = new JPanel();
-		panel.setLayout(null);
-		panel.setBackground(Color.WHITE);
-		panel.setBounds(455, 44, 143, 479);
-		panel.setBorder(title);
-		chatPanel.add(panel);
+		JPanel memberPanel = new JPanel();
+		memberPanel.setLayout(null);
+		memberPanel.setBackground(Color.WHITE);
+		memberPanel.setBounds(455, 44, 143, 479);
+		memberPanel.setBorder(title);
+		chatPanel.add(memberPanel);
 		
-		JList listMembers = new JList();
+		JList<String> listMembers = new JList<String>(group.getAllUsersByGroup(user.getCurrentGroup()));
 		listMembers.setBounds(15, 32, 113, 431);
-		panel.add(listMembers);
+		memberPanel.add(listMembers);
 		
 		main.addWindowListener(new WindowAdapter() {
 	        @Override
 	        public void windowClosing(WindowEvent e) {
 	        	network.sendBroadcastMessage("RemoveUser:" + user.getUser());
 	        }
+		});
+		
+		addMember.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				List<String> list = listUsers.getSelectedValuesList();
+				if (!list.isEmpty()) {
+					int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to add the following members: " + list + "?", "Add Member(s)", JOptionPane.YES_NO_OPTION);
+					if (option == JOptionPane.YES_OPTION) {
+						
+						for (int i = 0; i < list.size(); i++) {
+							network.sendBroadcastMessage("AddMember:" + user.getCurrentGroup() + ":" + list.get(i));
+						}
+					}
+				} else {
+					JOptionPane.showMessageDialog(main, "No user(s) selected", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		
+		deleteMember.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				List<String> list = listMembers.getSelectedValuesList();
+				if (!list.isEmpty()) {
+					int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to delete the following members: " + list + "?", "Delete Member(s)", JOptionPane.YES_NO_OPTION);
+					if (option == JOptionPane.YES_OPTION) {
+						for (int i = 0; i < list.size(); i++) {
+							network.sendBroadcastMessage("DeleteMember:" + user.getCurrentGroup() + ":" + list.get(i));
+						}
+					}
+				} else {
+					JOptionPane.showMessageDialog(main, "No user(s) selected", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
 		});
 		
 		/* ------------------------------------------ START OF REGISTER ------------------------------------------ */
@@ -407,9 +499,6 @@ public class WhatsChat extends JFrame {
 							user.setUser(userId);
 							lblRegError.setText("Success!");
 							network.sendBroadcastMessage("AddNewUser:" + userId);
-	
-							lblUserID.setText(userId);
-							lblUserDescription.setText(user.getDescription(userId));
 							
 							main.setVisible(true);
 							register.setVisible(false);
@@ -435,8 +524,9 @@ public class WhatsChat extends JFrame {
 						int length = dgpReceived.getLength();
 						String msg = new String(receivedData, 0, length);
 			            String[] split = msg.split("\\:");
-			            
+
 			            switch (split[0]) {
+			            	// [User ID]
 			            	case "CheckUserID":
 			            		user.setUserIdTaken(false);
 				            	if (user.getUser().equals(split[1])) {
@@ -450,14 +540,30 @@ public class WhatsChat extends JFrame {
 				            	}
 			            		break;
 			            		
+			            	// [New User ID]
 			            	case "AddNewUser":
 			            		user.addUser(split[1], "");
-				            	lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
 			            		break;
 			            		
+			            	// [User ID] [User Description]
 			            	case "AddUser":
 			            		user.addUser(split[1], split[2]);
-				            	lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
+			            		break;
+			            		
+			            		// [User ID]
+			            	case "RemoveUser":
+			            		user.removeUser(split[1]);
+			            		break;
+			            	
+			            	// [Old User ID] [New User ID] [New User Description]
+			            	case "UpdateUser":
+			            		user.updateUser(split[1], split[2], split[3]);
+				            	if (user.getUser().equals(split[1])) {
+				            		user.setUser(split[2]);
+				            		
+				            		group.updateMember(split[1], split[2]);
+				            	}
+				            	network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
 			            	case "GetOnlineUsers":
@@ -470,6 +576,28 @@ public class WhatsChat extends JFrame {
 				            	}
 			            		break;
 			            		
+			            	// [Group Name] [User ID]
+			            	case "AddMember":
+			            		group.addMember(split[1], split[2]);
+			            		if (user.getUser().equals(split[2])) {
+			            			JOptionPane.showMessageDialog(main, "You have been added into " + split[1], "Added", JOptionPane.PLAIN_MESSAGE);
+			            		}
+			            		network.sendBroadcastMessage("RefreshGroup");
+			            		break;
+			            	
+			            	// [Group Name] [User ID]
+			            	case "DeleteMember":
+			            		group.removeMember(split[1], split[2]);
+			            		
+			            		if (user.getUser().equals(split[2])) {
+			            			user.setCurrentGroup(null);
+			            			JOptionPane.showMessageDialog(main, "You have been removed from " + split[1], "Removed", JOptionPane.PLAIN_MESSAGE);
+			            		}
+			            		
+			            		network.sendBroadcastMessage("RefreshGroup");
+			            		break;
+			            		
+			            	// [Group Name]
 			            	case "CheckGroupName":
 			            		group.setGroupNameTaken(false);
 				            	if (group.groupNameExists(split[1])) {
@@ -477,27 +605,74 @@ public class WhatsChat extends JFrame {
 				            	}
 			            		break;
 			            		
+			            	// [Group Name] [IP Address] [Creator's User ID]
 			            	case "CreateGroup":
 			            		group.addGroup(split[1], split[2], split[3]);
 				            	if (user.getUser().equals(split[3])) {
 				            		user.setCurrentGroup(split[1]);
-				            		group.addMember(split[1], split[3]);
-				            		lblCurrentGroup.setText("Group Name: " + split[1]);
 				            	}
+				            	network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
-			            	case "RemoveUser":
-			            		user.removeUser(split[1]);
-				            	lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
+			            	// [Old Group Name] [New Group Name]
+			            	case "UpdateGroupName":
+			            		group.updateGroup(split[1], split[2], user.getUser());
+			            		if (user.getCurrentGroup().equals(split[1])) {
+			            			user.setCurrentGroup(split[2]);
+			            		}
+			            		network.sendBroadcastMessage("RefreshGroup");
+			        
 			            		break;
 			            		
-			            	case "UpdateUser":
-			            		user.updateUser(split[1], split[2], split[3]);
-				            	if (user.getUser().equals(split[1])) {
-				            		user.setUser(split[2]);
-				            	}
+			            	// [Group Name] [User ID]
+			            	case "LeaveGroup":
+			            		if (user.getUser().equals(split[2])) {
+			            			user.setCurrentGroup(null);
+			            		}
+			            		group.removeMember(split[1], split[2]);
+			            		network.sendBroadcastMessage("RefreshGroup");
+			            		break;
+			            		
+			            	// [Group Name]
+			            	case "DeleteGroup":
+			            		if (user.getCurrentGroup().equals(split[1])) {
+			            			user.setCurrentGroup(null);
+			            		}
+			            		
+			            		group.removeGroup(split[1]);
+			            		network.sendBroadcastMessage("RefreshGroup");
+			            		break;
+			            		
+			            	case "RefreshGroup":
+			            		group.getAllUsersByGroup(user.getCurrentGroup());
+			            		group.getAllGroupsByUserId(user.getUser());
 			            		break;
 			            }
+			            
+			            lblUserID.setText(user.getUser());
+			            lblUserDescription.setText(user.getDescription(user.getUser()));
+			            lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
+			            	         
+			            if (user.getCurrentGroup() != null) {
+			            	addMember.setEnabled(true);
+			            	deleteMember.setEnabled(true);
+			            	editGroup.setEnabled(true);
+			            	leaveGroup.setEnabled(true);
+			            	deleteGroup.setEnabled(true);
+			        		btnSend.setEnabled(true);
+			        		
+			        		lblCurrentGroup.setText("Group Name: " + user.getCurrentGroup());
+			            } else {
+			            	addMember.setEnabled(false);
+			            	deleteMember.setEnabled(false);
+			            	editGroup.setEnabled(false);
+			            	leaveGroup.setEnabled(false);
+			            	deleteGroup.setEnabled(false);
+			        		btnSend.setEnabled(false);
+			        		
+			        		lblCurrentGroup.setText("Group Name: ");
+			            }
+			            
 			            
 					} catch (IOException ex) {
 						ex.printStackTrace();

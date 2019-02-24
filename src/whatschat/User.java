@@ -34,11 +34,7 @@ public class User {
 	public String getDescription(String id) {
 		return usersMap.get(id);
 	}
-	
-	public void setDescription(String description) {
-		userDescription = description;
-	}
-	
+
 	public boolean isUserIdTaken() {
 		return userIdExists;
 	}

@@ -7,18 +7,26 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.swing.DefaultListModel;
-import javax.swing.ListModel;
 
 public class Group {
 
+	// List of all groups
 	private DefaultListModel<String> groupsModel = new DefaultListModel<String>();
+	// List of all IP addresses
 	private DefaultListModel<String> ipModel = new DefaultListModel<String>();
+	// Used to hold the list of all groups of a user
+	private DefaultListModel<String> userGroupsModel = new DefaultListModel<String>();
+	// Used to hold the list of all members of a group
+	private DefaultListModel<String> groupMembersModel = new DefaultListModel<String>();
+	
+	// Maps all groups to their respective IP addresses
 	private Map<String, String> groupIpMap = new HashMap<String, String>();
+	// Maps all groups to their respective list of members
 	private Map<String, List<String>> groupUserMap = new HashMap<String, List<String>>();
+	// Maps all users to their respective list of groups
 	private Map<String, List<String>> userGroupMap = new HashMap<String, List<String>>();
 
 	private boolean groupNameExists = false;
-	
 	private Network network;
 	
 	public Group(Network nw) {
@@ -41,12 +49,17 @@ public class Group {
 			groupIpMap.put(name, ip);
 			network.connectChat(ip);
 			
-			// Key: GroupName; Value: Users (List)
 			List<String> userList = new ArrayList<>();
+			userList.add(id);
 			groupUserMap.put(name, userList);
 			
-			// Key: UserID; Value: Groups (List)
-			List<String> groupList = new ArrayList<>();
+			List<String> groupList;
+			if (!userGroupMap.containsKey(id)) {
+				groupList = new ArrayList<>();
+			} else {
+				groupList = userGroupMap.get(id);
+			}
+			
 			groupList.add(name);
 			userGroupMap.put(id, groupList);
 		}
@@ -55,18 +68,91 @@ public class Group {
 	public void removeGroup(String name) {
 		if (groupsModel.contains(name)) {
 			groupsModel.removeElement(name);
+			ipModel.removeElement(groupIpMap.get(name));
+			groupIpMap.remove(name);
+			
+			List<String> userList = groupUserMap.get(name);
+			groupUserMap.remove(name);
+			
+			if (userList != null) {
+				for (int i = 0; i < userList.size(); i++) {
+					List<String> groupList = userGroupMap.get(userList.get(i));
+					groupList.remove(name);
+					
+					userGroupMap.remove(userList.get(i));
+					userGroupMap.put(userList.get(i), groupList);
+				}
+			}
 		}
 	} 
+	
+	public void updateGroup(String oldName, String newName, String id) {
+		if (groupsModel.contains(oldName)) {
+			groupsModel.removeElement(oldName);
+			groupsModel.addElement(newName);
+			
+			groupIpMap.put(newName, groupIpMap.get(oldName));
+			groupIpMap.remove(oldName);
+			
+			groupUserMap.put(newName, groupUserMap.get(oldName));
+			groupUserMap.remove(oldName);
+				
+			List<String> updateGroupList = userGroupMap.get(id);
+			if (updateGroupList != null) {
+				if (updateGroupList.contains(oldName)) {
+					updateGroupList.remove(oldName);
+					updateGroupList.add(newName);
+					
+					userGroupMap.remove(id);
+					userGroupMap.put(id, updateGroupList);
+				}
+			}
+		}
+	}
 	
 	// Add new member to the group
 	public void addMember(String name, String id) {
 		List<String> userList = groupUserMap.get(name);
 		userList.add(id);
-		groupUserMap.replace(name, userList);
+		groupUserMap.put(name, userList);
+		
+		List<String> groupList;
+		if (!userGroupMap.containsKey(id)) {
+			groupList = new ArrayList<>();
+		} else {
+			groupList = userGroupMap.get(id);
+		}
+		
+		groupList.add(name);
+		userGroupMap.put(id, groupList);
 	}
 	
 	public void removeMember(String name, String id) {
+		List<String> userList = groupUserMap.get(name);
+		userList.remove(id);
+		groupUserMap.put(name, userList);
 		
+		List<String> groupList = userGroupMap.get(id);
+		groupList.remove(name);
+		userGroupMap.put(id, groupList);
+	}
+	
+	public void updateMember(String oldId, String newId) {
+		List<String> groupList = userGroupMap.get(oldId);
+		userGroupMap.put(newId, groupList);
+		userGroupMap.remove(oldId);
+		
+		// list of groups that the user is in
+		if (groupList != null) {
+			for (int i = 0; i < groupList.size(); i++) {
+				List<String> userList = groupUserMap.get(groupList.get(i));
+				userList.remove(oldId);
+				userList.add(newId);
+				
+				groupUserMap.remove(groupList.get(i));
+				groupUserMap.put(groupList.get(i), userList);
+			}
+		}
 	}
 	
 	public boolean groupNameExists(String name) {
@@ -83,17 +169,30 @@ public class Group {
 	
 	// Get all groups of a user
 	public DefaultListModel<String> getAllGroupsByUserId(String id) {
-		DefaultListModel<String> groupsModel = new DefaultListModel<String>();
+		userGroupsModel.clear();
 		List<String> groupsList = userGroupMap.get(id);
-
+		
 		if (groupsList != null) {
 			for (int i = 0; i < groupsList.size(); i++) {
-				groupsModel.addElement(groupsList.get(i));
+				userGroupsModel.addElement(groupsList.get(i));
 			}
 		}
 		
-		return groupsModel;
+		return userGroupsModel;
 		
+	}
+	
+	public DefaultListModel<String> getAllUsersByGroup(String name) {
+		groupMembersModel.clear();
+		List<String> membersList = groupUserMap.get(name);
+		
+		if (membersList != null) {
+			for (int i = 0; i < membersList.size(); i++) {
+				groupMembersModel.addElement(membersList.get(i));
+			}
+		}
+		
+		return groupMembersModel;
 	}
 	
 	public String generateRandomIp() {
