@@ -54,12 +54,12 @@ public class Network {
 		}
 	}
 	
-	public void sendChatMessage(String msg, String ip) {
+	public void sendChatMessage(String msg, String name) {
 		try {
 			byte[] buf = msg.getBytes();
 			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, chatGroup, PORT);
 			chatSocket.send(dgpSend);
-			jedis.addMessage(ip, msg);
+			jedis.addMessage(name, msg);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}

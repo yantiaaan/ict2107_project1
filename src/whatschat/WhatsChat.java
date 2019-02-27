@@ -304,6 +304,10 @@ public class WhatsChat extends JFrame {
 	        @Override
 	        public void windowClosing(WindowEvent e) {
 	        	network.sendBroadcastMessage("RemoveUser:" + user.getUser());
+	        	if (user.getAllUsers().getSize() == 0) {
+	        		jedis.flush();
+	        		System.out.println("Flushed!");
+	        	}
 	        }
 		});
 		
@@ -473,7 +477,7 @@ public class WhatsChat extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (!txtMessage.getText().isEmpty()) {
 					String msg = user.getUser() + ": " + txtMessage.getText();
-					network.sendChatMessage(msg, group.getIpAddress(user.getCurrentGroup()));
+					network.sendChatMessage(msg, user.getCurrentGroup());
 					txtMessage.setText("");
 					getChat();
 				}
@@ -655,8 +659,8 @@ public class WhatsChat extends JFrame {
 			            		
 			            	// [Group Name] [User ID]
 			            	case "AddMember":
-			            		group.addMember(split[1], split[2]);
 			            		if (user.getUser().equals(split[2])) {
+				            		group.addMember(split[1], split[2]);
 			            			JOptionPane.showMessageDialog(main, "You have been added into " + split[1], "Added", JOptionPane.PLAIN_MESSAGE);
 			            		}
 			            		network.sendBroadcastMessage("RefreshGroup");
@@ -720,7 +724,6 @@ public class WhatsChat extends JFrame {
 			            	case "RefreshGroup":
 			            		group.getAllUsersByGroup(user.getCurrentGroup());
 			            		group.getAllGroupsByUserId(user.getUser());
-			            		// TODO get all messages of the group
 			            		break;
 			            }
 			            
@@ -801,7 +804,7 @@ public class WhatsChat extends JFrame {
 	}
 	
 	public void getAllMessages() {
-		List<String> messageList = jedis.getMessages(group.getIpAddress(user.getCurrentGroup()));
+		List<String> messageList = jedis.getMessages(user.getCurrentGroup());
 		if (messageList != null) {
 			clearChat();
 			for (int i = 0; i < messageList.size(); i++ ) {
