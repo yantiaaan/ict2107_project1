@@ -16,21 +16,24 @@ public class Network {
 	private MulticastSocket chatSocket = null;
 	private InetAddress chatGroup = null;
 	
+	private JedisDB jedis = new JedisDB();
+	
 	public void connectBroadcast() {
 		try {
 			broadcastGroup = InetAddress.getByName(MULTICAST_ADDRESS);
 			broadcastSocket = new MulticastSocket(PORT);
 			broadcastSocket.joinGroup(broadcastGroup);
+			System.out.println("Connected to Broadcast");
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
 	}
 	
-	public void connectChat(String ip) {
+	public void sendBroadcastMessage(String msg) {
 		try {
-			chatGroup = InetAddress.getByName(ip);
-			chatSocket = new MulticastSocket(PORT);
-			chatSocket.joinGroup(chatGroup);
+			byte[] buf = msg.getBytes();
+			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, broadcastGroup, PORT);
+			broadcastSocket.send(dgpSend);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
@@ -40,25 +43,29 @@ public class Network {
 		return broadcastSocket;
 	}
 	
-	public void sendBroadcastMessage(String msg) {
+	public void connectChatGroup(String ip) {
 		try {
-			byte[] buf = msg.getBytes();
-			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, broadcastGroup, PORT);
-			broadcastSocket.send(dgpSend);
-			System.out.println("Broadcast " + msg);
+			chatGroup = InetAddress.getByName(ip);
+			chatSocket = new MulticastSocket(PORT);
+			chatSocket.joinGroup(chatGroup);
+			System.out.println("Connected to Chat Group " + chatGroup.toString());
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
 	}
 	
-	public void sendChatMessage(String msg) {
+	public void sendChatMessage(String msg, String ip) {
 		try {
 			byte[] buf = msg.getBytes();
-			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, broadcastGroup, PORT);
-			broadcastSocket.send(dgpSend);
-			System.out.println("Chat " + msg);
+			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, chatGroup, PORT);
+			chatSocket.send(dgpSend);
+			jedis.addMessage(ip, msg);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
+	}
+	
+	public MulticastSocket getChatSocket() {
+		return chatSocket;
 	}
 }

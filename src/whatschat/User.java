@@ -10,7 +10,6 @@ public class User {
 	private DefaultListModel<String> usersModel = new DefaultListModel<String>();
 	private Map<String, String> usersMap = new HashMap<String, String>();
 	private String userId = "";
-	private String userDescription = "";
 	private boolean userIdExists = false;
 	
 	private String groupName = "";
@@ -69,5 +68,4 @@ public class User {
 	public DefaultListModel<String> getAllUsers() {
 		return usersModel;
 	}
-
 }

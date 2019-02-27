@@ -12,8 +12,6 @@ public class Group {
 
 	// List of all groups
 	private DefaultListModel<String> groupsModel = new DefaultListModel<String>();
-	// List of all IP addresses
-	private DefaultListModel<String> ipModel = new DefaultListModel<String>();
 	// Used to hold the list of all groups of a user
 	private DefaultListModel<String> userGroupsModel = new DefaultListModel<String>();
 	// Used to hold the list of all members of a group
@@ -25,13 +23,10 @@ public class Group {
 	private Map<String, List<String>> groupUserMap = new HashMap<String, List<String>>();
 	// Maps all users to their respective list of groups
 	private Map<String, List<String>> userGroupMap = new HashMap<String, List<String>>();
+	
+	JedisDB jedis = new JedisDB();
 
 	private boolean groupNameExists = false;
-	private Network network;
-	
-	public Group(Network nw) {
-		network = nw;
-	}
 	
 	public boolean isGroupNameTaken() {
 		return groupNameExists;
@@ -45,14 +40,12 @@ public class Group {
 	public void addGroup(String name, String ip, String id) {
 		if (!groupsModel.contains(name)) {
 			groupsModel.addElement(name);
-			ipModel.addElement(ip);
 			groupIpMap.put(name, ip);
-			network.connectChat(ip);
 			
 			List<String> userList = new ArrayList<>();
 			userList.add(id);
 			groupUserMap.put(name, userList);
-			
+		
 			List<String> groupList;
 			if (!userGroupMap.containsKey(id)) {
 				groupList = new ArrayList<>();
@@ -68,7 +61,6 @@ public class Group {
 	public void removeGroup(String name) {
 		if (groupsModel.contains(name)) {
 			groupsModel.removeElement(name);
-			ipModel.removeElement(groupIpMap.get(name));
 			groupIpMap.remove(name);
 			
 			List<String> userList = groupUserMap.get(name);
@@ -177,9 +169,7 @@ public class Group {
 				userGroupsModel.addElement(groupsList.get(i));
 			}
 		}
-		
 		return userGroupsModel;
-		
 	}
 	
 	public DefaultListModel<String> getAllUsersByGroup(String name) {
@@ -200,9 +190,13 @@ public class Group {
 		String ip = "";
 		while (true) {
 			ip = "230.1." + r.nextInt(256) + "." + r.nextInt(256);
-			if (!ipModel.contains(ip)) {
+			if (!groupIpMap.containsValue(ip)) {
 				return ip;
 			}
 		}
+	}
+	
+	public String getIpAddress(String name) {
+		return groupIpMap.get(name);
 	}
 }
