@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -117,6 +119,17 @@ public class WhatsChat extends JFrame {
 		
 		JMenuItem deleteGroup = new JMenuItem("Delete Group");
 		groupMenu.add(deleteGroup);
+		
+		// More Menu
+		JMenu moreMenu = new JMenu("More");
+		menuBar.add(moreMenu);
+		
+		JMenuItem searchMsg = new JMenuItem("Search Message");
+		moreMenu.add(searchMsg);
+		
+		JMenuItem pinMsg = new JMenuItem("Pin Message");
+		moreMenu.add(pinMsg);
+		
 		
 		// User Menu - Edit User Frame
 		JFrame editFrame = new JFrame();
@@ -365,6 +378,52 @@ public class WhatsChat extends JFrame {
 			        	editFrame.dispose();
 			        }
 				});
+			}
+		});
+		/** -------------------------------------------------------- SEARCH MESSAGE ------------------------------------------------------------ **/
+		searchMsg.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				ArrayList<String> searchList = new ArrayList<String>();
+				
+				String word = JOptionPane.showInputDialog("Search Word");
+				
+				String conversation = textArea.getText();
+				
+				String [] msg = conversation.split("\\\n");
+				
+				for(int i =0; i< msg.length; i++) {
+					if(msg[i].contains(word)) {
+						searchList.add(msg[i]);
+					}
+				}
+				
+				String searchResult = "";
+				for(String c : searchList) {
+					searchResult += c + "\n";
+				}
+				
+				if(!searchResult.isEmpty()) {
+					JOptionPane.showMessageDialog(null, searchResult, "SEARCH RESULT", JOptionPane.INFORMATION_MESSAGE);
+					
+				}
+				else {
+					JOptionPane.showMessageDialog(null, "No Search Found.", "SEARCH RESULT", JOptionPane.INFORMATION_MESSAGE);
+				}
+			
+				
+				System.out.println("search list:" + Arrays.toString(searchList.toArray()));
+				
+			}
+		});
+		/** -------------------------------------------------------- PINNED MESSAGE ------------------------------------------------------------ **/
+		pinMsg.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String msgPin = JOptionPane.showInputDialog("Enter pin message: ");
+				if (!msgPin.isEmpty()) {
+					msgPin = "    [ [ PINNED MESSAGE ] ] : " + msgPin + "    ";
+					network.sendChatMessage(msgPin, user.getCurrentGroup());
+					getChat();
+				}
 			}
 		});
 		
@@ -739,6 +798,8 @@ public class WhatsChat extends JFrame {
 			            	deleteGroup.setEnabled(true);
 			            	txtMessage.setEnabled(true);
 			        		btnSend.setEnabled(true);
+			        		searchMsg.setEnabled(true);
+			        		pinMsg.setEnabled(true);
 			        		
 			        		lblCurrentGroup.setText("Group Name: " + user.getCurrentGroup());
 			            } else {
@@ -749,6 +810,8 @@ public class WhatsChat extends JFrame {
 			            	deleteGroup.setEnabled(false);
 			            	txtMessage.setEnabled(false);
 			        		btnSend.setEnabled(false);
+			        		searchMsg.setEnabled(false);
+			        		pinMsg.setEnabled(false);
 			        		
 			        		lblCurrentGroup.setText("Group Name: ");
 			            }
@@ -793,7 +856,28 @@ public class WhatsChat extends JFrame {
 						byte[] receivedData = dgpReceived.getData();
 						int length = dgpReceived.getLength();
 						String msg = new String(receivedData, 0, length);
-			            textArea.append(msg + "\n");
+						
+						if(msg.contains("PINNED MESSAGE")) {
+							String conversation = textArea.getText();
+							String [] line = conversation.split("\\\n");
+							//if already have a pinned msg
+							if (line[0].contains("PINNED MESSAGE")) {
+								line[0]=msg ;
+								textArea.setText("");
+								for(String c : line) {
+									textArea.append(c + System.getProperty("line.separator"));
+								}
+								
+							}
+							//else new pin msg
+							else {
+								textArea.setText(msg + "\n" + textArea.getText());
+							}
+						}
+						else {
+							 textArea.append(msg + "\n");
+						}
+						
 
 					} catch (IOException ex) {
 						ex.printStackTrace();
