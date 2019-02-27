@@ -803,13 +803,6 @@ public class WhatsChat extends JFrame {
 			        		lblCurrentGroup.setText("Group Name: ");
 			            }
 			            
-			            if(textArea.getText().contains("PINNED MESSAGE")){
-			            	delPinMsg.setEnabled(true);
-			            }
-			            else {
-			            	delPinMsg.setEnabled(false);
-			            }
-			            
 			            
 					} catch (IOException ex) {
 						ex.printStackTrace();
