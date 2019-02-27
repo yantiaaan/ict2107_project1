@@ -127,12 +127,6 @@ public class WhatsChat extends JFrame {
 		JMenuItem searchMsg = new JMenuItem("Search Message");
 		moreMenu.add(searchMsg);
 		
-		JMenuItem pinMsg = new JMenuItem("Add Pin Message");
-		moreMenu.add(pinMsg);
-		
-		JMenuItem delPinMsg = new JMenuItem("Remove Pin Message");
-		moreMenu.add(delPinMsg);
-		
 		
 		// User Menu - Edit User Frame
 		JFrame editFrame = new JFrame();
@@ -360,26 +354,6 @@ public class WhatsChat extends JFrame {
 				
 				System.out.println("search list:" + Arrays.toString(searchList.toArray()));
 				
-			}
-		});
-		/** -------------------------------------------------------- ADD PINNED MESSAGE ------------------------------------------------------------ **/
-		pinMsg.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String msgPin = JOptionPane.showInputDialog("Enter pin message: ");
-				if (!msgPin.isEmpty()) {
-					msgPin = "    [ [ PINNED MESSAGE ] ] : " + msgPin + "    ";
-					network.sendChatMessage(msgPin, user.getCurrentGroup());
-					getChat();
-				}
-			}
-		});
-		
-		/** -------------------------------------------------------- REMOVE PINNED MESSAGE ------------------------------------------------------------ **/
-		delPinMsg.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String remove = "REMOVE PINNED";
-				network.sendChatMessage(remove, user.getCurrentGroup());
-				getChat();
 			}
 		});
 		
@@ -814,7 +788,6 @@ public class WhatsChat extends JFrame {
 			            	txtMessage.setEnabled(true);
 			        		btnSend.setEnabled(true);
 			        		searchMsg.setEnabled(true);
-			        		pinMsg.setEnabled(true);
 			        		
 			        		lblCurrentGroup.setText("Group Name: " + user.getCurrentGroup());
 			            } else {
@@ -826,7 +799,6 @@ public class WhatsChat extends JFrame {
 			            	txtMessage.setEnabled(false);
 			        		btnSend.setEnabled(false);
 			        		searchMsg.setEnabled(false);
-			        		pinMsg.setEnabled(false);
 			        		
 			        		lblCurrentGroup.setText("Group Name: ");
 			            }
@@ -878,37 +850,7 @@ public class WhatsChat extends JFrame {
 						byte[] receivedData = dgpReceived.getData();
 						int length = dgpReceived.getLength();
 						String msg = new String(receivedData, 0, length);
-						
-						if(msg.contains("PINNED MESSAGE")) {
-							String conversation = textArea.getText();
-							String [] line = conversation.split("\\\n");
-							//if already have a pinned msg
-							if (line[0].contains("PINNED MESSAGE")) {
-								line[0]=msg ;
-								textArea.setText(" ");
-								for(String c : line) {
-									textArea.append(c + System.getProperty("line.separator"));
-								}
-							}
-							//else new pin msg
-							else {
-								textArea.setText(msg + "\n" + textArea.getText());
-							}
-							
-						}
-						else if(msg.contains("REMOVE PINNED")) {
-							String conversationR = textArea.getText();
-							String [] lineR = conversationR.split("\\\n");
-							lineR[0] = "";
-							textArea.setText(" ");
-							for(int i=1; i<lineR.length; i++) {
-								textArea.append(lineR[i] + System.getProperty("line.separator"));
-							}
-						}
-						else {
-							 textArea.append(msg + "\n");
-						}
-
+						textArea.append(msg + "\n");
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}

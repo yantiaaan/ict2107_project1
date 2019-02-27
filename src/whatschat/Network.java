@@ -60,6 +60,7 @@ public class Network {
 			DatagramPacket dgpSend = new DatagramPacket(buf, buf.length, chatGroup, PORT);
 			chatSocket.send(dgpSend);
 			jedis.addMessage(name, msg);
+			
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
