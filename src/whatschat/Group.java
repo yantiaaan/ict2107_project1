@@ -17,8 +17,6 @@ public class Group {
 	// Used to hold the list of all members of a group
 	private DefaultListModel<String> groupMembersModel = new DefaultListModel<String>();
 	
-	// Maps all groups to their respective list of members
-	private Map<String, List<String>> groupUserMap = new HashMap<String, List<String>>();
 	// Maps all users to their respective list of groups
 	private Map<String, List<String>> userGroupMap = new HashMap<String, List<String>>();
 	
@@ -57,12 +55,8 @@ public class Group {
 	public void removeGroup(String name) {
 		if (groupsModel.contains(name)) {
 			groupsModel.removeElement(name);
-
-			jedis.removeKey(name);
 			
-			List<String> userList = groupUserMap.get(name);
-			groupUserMap.remove(name);
-			
+			List<String> userList = jedis.getMembers(name);
 			if (userList != null) {
 				for (int i = 0; i < userList.size(); i++) {
 					List<String> groupList = userGroupMap.get(userList.get(i));
@@ -72,6 +66,8 @@ public class Group {
 					userGroupMap.put(userList.get(i), groupList);
 				}
 			}
+			
+			jedis.removeKey(name);
 		}
 	} 
 	
@@ -80,12 +76,8 @@ public class Group {
 			groupsModel.removeElement(oldName);
 			groupsModel.addElement(newName);
 			
-//			groupIpMap.put(newName, groupIpMap.get(oldName));
-//			groupIpMap.remove(oldName);
+			jedis.updateKey(oldName, newName);
 			
-			groupUserMap.put(newName, groupUserMap.get(oldName));
-			groupUserMap.remove(oldName);
-				
 			List<String> updateGroupList = userGroupMap.get(id);
 			if (updateGroupList != null) {
 				if (updateGroupList.contains(oldName)) {
@@ -101,10 +93,6 @@ public class Group {
 	
 	// Add new member to the group
 	public void addMember(String name, String id) {
-//		List<String> userList = groupUserMap.get(name);
-//		userList.add(id);
-//		groupUserMap.put(name, userList);
-		
 		jedis.addMember(name, id);
 		
 		List<String> groupList;
@@ -119,15 +107,11 @@ public class Group {
 	}
 	
 	public void removeMember(String name, String id) {
-//		List<String> userList = groupUserMap.get(name);
-//		userList.remove(id);
-//		groupUserMap.put(name, userList);
 		jedis.removeMember(name, id);
 		
 		List<String> groupList = userGroupMap.get(id);
 		groupList.remove(name);
 		userGroupMap.put(id, groupList);
-		jedis.removeMember(name, id);
 	}
 	
 	public void updateMember(String oldId, String newId) {
@@ -138,16 +122,10 @@ public class Group {
 		// list of groups that the user is in
 		if (groupList != null) {
 			for (int i = 0; i < groupList.size(); i++) {
-				List<String> userList = groupUserMap.get(groupList.get(i));
-				userList.remove(oldId);
-				userList.add(newId);
-				
-				groupUserMap.remove(groupList.get(i));
-				groupUserMap.put(groupList.get(i), userList);
+				jedis.removeMember(groupList.get(i), oldId);
+				jedis.addMember(groupList.get(i), newId);
 			}
 		}
-		
-		// TODO jedis update member
 	}
 	
 	public boolean groupNameExists(String name) {

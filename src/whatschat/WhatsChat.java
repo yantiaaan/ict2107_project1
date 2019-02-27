@@ -130,7 +130,6 @@ public class WhatsChat extends JFrame {
 		JMenuItem pinMsg = new JMenuItem("Pin Message");
 		moreMenu.add(pinMsg);
 		
-		
 		// User Menu - Edit User Frame
 		JFrame editFrame = new JFrame();
 		editFrame.setVisible(false);
