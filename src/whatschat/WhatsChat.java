@@ -25,6 +25,7 @@ import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -52,6 +53,9 @@ public class WhatsChat extends JFrame {
 	Group group = new Group();
 	JedisDB jedis = new JedisDB();
 	
+	public DefaultListModel<String> friendsModel = new DefaultListModel<String>();
+	private ArrayList<User> listOfMyFriends = new ArrayList<User>();
+	private ArrayList<User> fullListOfMyFriends = new ArrayList<User>();
 	JTextArea textArea;
 	
 	public static void main(String[] args) {
@@ -66,6 +70,7 @@ public class WhatsChat extends JFrame {
 		});
 	}
 	
+	/** -------------------------------------------------------- SWITCH CASE VALIDATE ACTION- -------------------------------------------------------- **/
 	public WhatsChat() {
 		
 		network.connectBroadcast();
@@ -262,7 +267,7 @@ public class WhatsChat extends JFrame {
 		friendTab.setLayout(null);
 		tabbedPane.add("Friends", friendTab);
 		
-		JList<String> listFriends = new JList<String>(user.getAllFriends());
+		JList<String> listFriends = new JList<String>(friendsModel);
 		listFriends.setBounds(15, 51, 255, 280);
 		friendTab.add(listFriends);
 		
@@ -609,7 +614,9 @@ public class WhatsChat extends JFrame {
 					JOptionPane.showMessageDialog(null, "You can't add yourself!");
 					btnSend.setEnabled(true);
 				} else {
-					network.sendBroadcastMessage("AddFriend:" + user.getUser() + ":" + list);
+					// AddFriend command with current user and adding user
+					String msg = ("AddFriend:" + user.getUser() + ":" + list);
+					network.sendBroadcastMessage(msg);
 					Timer buttonTimer = new Timer();
 					buttonTimer.schedule(new TimerTask() {
 						@Override
@@ -760,12 +767,6 @@ public class WhatsChat extends JFrame {
 			}
 		});
 		
-		/* ------------------------------------------ SWITCH CASE TO VALIDATE ACTION ------------------------------------------ */
-
-		public void mainValidateAction(String msg) {
-            String[] split = msg.split("\\:");
-
-		}
 		/* ------------------------------------------ START OF THREAD ------------------------------------------ */
 		
 		new Thread(new Runnable() {
@@ -908,21 +909,58 @@ public class WhatsChat extends JFrame {
 			            		group.getAllUsersByGroup(user.getCurrentGroup());
 			            		group.getAllGroupsByUserId(user.getUser());
 			            		break;
-			            		
+			            			            	
 			            	case "AddFriend":
-			            		int answer = JOptionPane.showConfirmDialog(null, "Do you want to want accept friend invitation from "+split[1] + " ?",
-			    						"Hi "+split[2], JOptionPane.YES_NO_OPTION);
-			            		if (answer == 0) {
-			    					//replyRequest = "Accepted";
-			    					/*User tempUser = new User();
-			    					tempUser.setName(parts[2]);
-			    					tempUser.setPort(parts[3]);*/
-			    					user.addFriend(split[1], "");
-			    				}/* else {
-			    					replyRequest = "Rejected";
-			    				}*/
+			            		// Addfriend:current user: user being added
+			            		if (split[2].equals(user.getUser())) {
+			            			String replyRequest;
+			            			int answer = JOptionPane.showConfirmDialog(null, "Do you want to want accept friend invitation from "+split[1],
+			            					"Hi "+user.getUser(), JOptionPane.YES_NO_OPTION);
+			            			if (answer == 0) {
+			            				replyRequest = "Accepted";
+			            				User tempUser = new User();
+			            				tempUser.setUser(split[1]);
+			            				listOfMyFriends.add(tempUser);
+			            				fullListOfMyFriends.add(tempUser);
+			            				int pos = tempUser.getAllFriends().getSize();
+			            				friendsModel.add(pos, tempUser.getUser());
+			            			} else {
+			            				replyRequest = "Rejected";
+			            			}
+			            			replyRequest = "A!:" + replyRequest + ":" + user.getUser() + ":" + split[1];
+			            			network.sendBroadcastMessage(replyRequest);
+			            			
+			            		}
+			            		
+			            		
 			            		break;
-			            	
+			            		
+			            	case "A!":
+			            		// Once accepted 
+			            		// Addfriend:current user: user being added
+			            		// reply format "A!/acceptOrReject/FriendName/myName"
+
+			            					if (split[3].equals(user.getUser())) {
+			            						switch (split[1]) {
+			            						case "Accepted":
+			            							// if accepted, add to list. Not appended straight to text
+			            							// area
+			            							// to prevent cases of friends in the middle quitting
+			            							User tempUser = new User();
+			            							tempUser.setUser(split[2]);
+			            							listOfMyFriends.add(tempUser);
+			            							fullListOfMyFriends.add(tempUser);
+			            							int pos = friendsModel.getSize();
+			            							friendsModel.add(pos, tempUser.getUser());
+			            							break;
+			            						case "Rejected":
+			            							JOptionPane.showMessageDialog(null, "Your friend Request Was Rejected!", "Hi "+user.getUser(),
+			            									JOptionPane.PLAIN_MESSAGE);
+			            							break;
+			            						}
+			            					}		
+			            		break;
+			            		
 			            }
 			            
 			            lblUserID.setText(user.getUser());
