@@ -26,6 +26,10 @@ public class User {
 		return userId;
 	}
 	
+	public void setPort(String Port) {
+		this.Port = Port;
+	}
+	
 	public void setCurrentGroup(String name) {
 		groupName = name;
 	}
@@ -80,17 +84,6 @@ public class User {
 		if (friendsModel.contains(user)) {
 			friendsModel.removeElement(user);
 		}
-	}
-	
-	public boolean verifyIfUserExistInMyFriendList(String username) {
-
-		for (int i = 0; i < friendsModel.size(); i++) {
-			if (friendsModel.get(i).contains(username)) {
-				return true;
-			}
-		}
-		return false;
-
 	}
 	
 	public DefaultListModel<String> getAllUsers() {

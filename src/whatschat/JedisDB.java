@@ -54,7 +54,6 @@ public class JedisDB {
     	jedis.del("IP" + name);
     }
     
-    // (Key) Group Name ; (Value) User ID
     public void addMember(String name, String id) {
     	Jedis jedis = pool.getResource();
     	try {
@@ -73,8 +72,9 @@ public class JedisDB {
     	Jedis jedis = pool.getResource();
     	
     	try {
-    		jedis.srem("ID" + name, id);
+    		jedis.lrem("ID" + name, 1, id);
     	} catch (JedisException e) {
+    		System.out.println(e.toString());
     		//if something wrong happen, return it back to the pool
     		if (null != jedis) {
     			jedis.close();
@@ -132,6 +132,13 @@ public class JedisDB {
             	jedis.close();
         }
     	return null;
+    }
+    
+    public void updateKey(String oldName, String newName) {
+    	Jedis jedis = pool.getResource();
+    	jedis.rename("IP" + oldName, newName);
+    	jedis.rename("ID" + oldName, newName);
+    	jedis.rename("M" + oldName, newName);
     }
     
     public void removeKey(String name) {
