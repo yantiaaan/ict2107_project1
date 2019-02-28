@@ -75,7 +75,7 @@ public class Group {
 		if (groupsModel.contains(oldName)) {
 			groupsModel.removeElement(oldName);
 			groupsModel.addElement(newName);
-			
+
 			jedis.updateKey(oldName, newName);
 			
 			List<String> updateGroupList = userGroupMap.get(id);

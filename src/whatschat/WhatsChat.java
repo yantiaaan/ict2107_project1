@@ -880,8 +880,8 @@ public class WhatsChat extends JFrame {
 			            		
 			            	// [Old Group Name] [New Group Name]
 			            	case "UpdateGroupName":
-			            		group.updateGroup(split[1], split[2], user.getUser());
 			            		if (user.getCurrentGroup().equals(split[1])) {
+			            			group.updateGroup(split[1], split[2], user.getUser());
 			            			user.setCurrentGroup(split[2]);
 			            		}
 			            		network.sendBroadcastMessage("RefreshGroup");

@@ -74,7 +74,6 @@ public class JedisDB {
     	Jedis jedis = pool.getResource();
     	try {
     		jedis.lrem("ID" + name, 1, id);
-    		System.out.println(getMembers(name));
     	} catch (JedisException e) {
     		System.out.println("ERROR" + e.toString());
     		//if something wrong happen, return it back to the pool
@@ -138,9 +137,15 @@ public class JedisDB {
     
     public void updateKey(String oldName, String newName) {
     	Jedis jedis = pool.getResource();
-    	jedis.rename("IP" + oldName, newName);
-    	jedis.rename("ID" + oldName, newName);
-    	jedis.rename("M" + oldName, newName);
+    	if (jedis.exists("IP" + oldName)) {
+    		jedis.rename("IP" + oldName, "IP" + newName);
+    	}
+    	if (jedis.exists("ID" + oldName)) {
+    		jedis.rename("ID" + oldName, "ID" + newName);
+    	}
+    	if (jedis.exists("M" + oldName)) {
+    		jedis.rename("M" + oldName, "M" + newName);
+    	}
     }
     
     public void removeKey(String name) {
