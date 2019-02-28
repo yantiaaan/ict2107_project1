@@ -174,6 +174,12 @@ public class WhatsChat extends JFrame {
 		txtEditName.setColumns(10);
 		editPanel.add(txtEditName);
 		
+		JLabel lblNameError = new JLabel();
+		lblNameError.setForeground(Color.RED);
+		lblNameError.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		lblNameError.setBounds(132, 32, 331, 26);
+		editPanel.add(lblNameError);
+		
 		JTextField txtEditDescription = new JTextField();
 		txtEditDescription.setBounds(132, 63, 331, 26);
 		txtEditDescription.setColumns(10);
@@ -462,23 +468,37 @@ public class WhatsChat extends JFrame {
 				
 				btnSave.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
-						
-						String des = " ";
-						if (!txtEditDescription.getText().isEmpty()) {
-							des = txtEditDescription.getText();
+						if (txtEditName.getText().isEmpty()) {
+							lblNameError.setText("User ID cannot be blank");
+						} else {
+							network.sendBroadcastMessage("CheckUserID:" + txtEditName.getText());
+							sleep();
+							
+							if (user.isUserIdTaken()) {
+								lblNameError.setText("User ID has been taken");
+							} else {
+								if (user.isIdFormatValid(txtEditName.getText())) {
+									String des = " ";
+									if (!txtEditDescription.getText().isEmpty()) {
+										des = txtEditDescription.getText();
+									}
+									BufferedImage bImage = null;
+									if (!lblImageUrl.getText().isEmpty()) {
+										try {
+											File img = new File(lblImageUrl.getText());
+											bImage = ImageIO.read(img);
+											ImageIO.write(bImage, "png", new File(System.getProperty("user.dir") + "\\img\\" + user.getUser() + ".png"));
+										} catch (IOException ie) {
+											System.out.println("Exception occured :" + ie.getMessage());
+										}
+									}
+									network.sendBroadcastMessage("UpdateUser:" + user.getUser() + ":" + txtEditName.getText() + ":" + des);
+									editFrame.dispose();
+								} else {
+									lblNameError.setText("Invalid User ID format");
+								}
+							}
 						}
-						BufferedImage bImage = null;
-						try {
-							File img = new File(lblImageUrl.getText());
-							bImage = ImageIO.read(img);
-							ImageIO.write(bImage, "png", new File(System.getProperty("user.dir") + "\\img\\" + user.getUser() + ".png"));
-						} catch (IOException ie) {
-				               System.out.println("Exception occured :" + ie.getMessage());
-				         }
-						
-						network.sendBroadcastMessage("UpdateUser:" + user.getUser() + ":" + txtEditName.getText() + ":" + des);
-
-						editFrame.dispose();
 					}
 				});
 				
@@ -503,7 +523,7 @@ public class WhatsChat extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				String groupName = JOptionPane.showInputDialog(main, "Enter group name");
 				
-				if (!groupName.isEmpty()) {
+				if (groupName != null) {
 					network.sendBroadcastMessage("CheckGroupName:" + groupName);
 					sleep();
 					
@@ -525,7 +545,7 @@ public class WhatsChat extends JFrame {
 				String oldGroupName = user.getCurrentGroup();
 				String newGroupName = JOptionPane.showInputDialog(main, "Rename group name for " + oldGroupName);
 				
-				if (!newGroupName.isEmpty()) {
+				if (newGroupName != null) {
 					network.sendBroadcastMessage("CheckGroupName:" + newGroupName);
 					sleep();
 					
@@ -753,7 +773,7 @@ public class WhatsChat extends JFrame {
 					if (user.isUserIdTaken()) {
 						lblRegError.setText("User ID has been taken");
 					} else {
-						if (userId.matches("^[a-zA-Z][.\\S]{1,8}")) {
+						if (user.isIdFormatValid(userId)) {
 							user.setUser(userId);
 							lblRegError.setText("Success!");
 							network.sendBroadcastMessage("AddNewUser:" + userId);
@@ -793,9 +813,7 @@ public class WhatsChat extends JFrame {
 			            		break;
 			            	
 			            	case "DefaultUserID":
-			            		if (user.getUser().equals("")) {
-				            		user.setUserIdTaken(true);
-				            	}
+			            		user.setUserIdTaken(true);
 			            		break;
 			            		
 			            	// [New User ID]

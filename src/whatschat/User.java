@@ -26,6 +26,10 @@ public class User {
 		return userId;
 	}
 	
+	public boolean isIdFormatValid(String id) {
+		return id.matches("^[a-zA-Z][.\\S]{0,7}");
+	}
+	
 	public void setCurrentGroup(String name) {
 		groupName = name;
 	}
