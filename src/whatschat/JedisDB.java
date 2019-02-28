@@ -9,10 +9,10 @@ import redis.clients.jedis.exceptions.JedisException;
 
 public class JedisDB {
 	
-//    private static final String REDIS_HOST = "redis-19259.c1.ap-southeast-1-1.ec2.cloud.redislabs.com";
-//    private static final int REDIS_PORT = 19259;
-    private static final String REDIS_HOST = "redis-18376.c1.ap-southeast-1-1.ec2.cloud.redislabs.com";
-    private static final int REDIS_PORT = 18376;
+    private static final String REDIS_HOST = "redis-19259.c1.ap-southeast-1-1.ec2.cloud.redislabs.com";
+    private static final int REDIS_PORT = 19259;
+//    private static final String REDIS_HOST = "redis-18376.c1.ap-southeast-1-1.ec2.cloud.redislabs.com";
+//    private static final int REDIS_PORT = 18376;
     private static final int REDIS_TIMEOUT = 10000;
     private static final String REDIS_PASSWORD = "hnL4CUSUmQvmvBe"; 
     
