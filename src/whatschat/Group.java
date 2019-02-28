@@ -66,10 +66,12 @@ public class Group {
 					userGroupMap.put(userList.get(i), groupList);
 				}
 			}
-			
-			jedis.removeKey(name);
 		}
-	} 
+	}
+	
+	public void removeKey(String name) {
+		jedis.removeKey(name);
+	}
 	
 	public void updateGroup(String oldName, String newName, String id) {
 		if (groupsModel.contains(oldName)) {

@@ -555,7 +555,7 @@ public class WhatsChat extends JFrame {
 				int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to delete " + user.getCurrentGroup() + "?",
 						"Delete Group", JOptionPane.YES_NO_OPTION);
 				if (option == JOptionPane.YES_OPTION) {
-					network.sendBroadcastMessage("DeleteGroup:" + user.getCurrentGroup());
+					network.sendBroadcastMessage("DeleteGroup:" + user.getCurrentGroup() + ":" + user.getUser());
 					JOptionPane.showMessageDialog(main, "Group has been deleted successfully", "Success", JOptionPane.PLAIN_MESSAGE);
 				}
 			}
@@ -565,7 +565,9 @@ public class WhatsChat extends JFrame {
 		addMember.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				List<String> list = listUsers.getSelectedValuesList();
-				if (!list.isEmpty()) {
+				if(list.contains(user.getUser())) {
+					JOptionPane.showMessageDialog(main, "Unable to add yourself into the group", "Error", JOptionPane.ERROR_MESSAGE);
+				} else if (!list.isEmpty()) {
 					int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to add the following members: " + list + "?",
 							"Add Member(s)", JOptionPane.YES_NO_OPTION);
 					if (option == JOptionPane.YES_OPTION) {
@@ -951,13 +953,18 @@ public class WhatsChat extends JFrame {
 			            		network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
-			            	// [Group Name]
+			            	// [Group Name] [User ID]
 			            	case "DeleteGroup":
 			            		if (user.getCurrentGroup().equals(split[1])) {
 			            			user.setCurrentGroup(null);
+			            			clearChat();
+			            		}
+			            		group.removeGroup(split[1]);
+			            		
+			            		if (user.getUser().equals(split[2])) {
+			            			group.removeKey(split[1]);
 			            		}
 			            		
-			            		group.removeGroup(split[1]);
 			            		network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
