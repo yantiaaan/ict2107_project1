@@ -75,8 +75,6 @@ public class Group {
 		if (groupsModel.contains(oldName)) {
 			groupsModel.removeElement(oldName);
 			groupsModel.addElement(newName);
-
-			jedis.updateKey(oldName, newName);
 			
 			List<String> updateGroupList = userGroupMap.get(id);
 			if (updateGroupList != null) {
@@ -91,10 +89,14 @@ public class Group {
 		}
 	}
 	
+	public void updateKey(String oldName, String newName) {
+		jedis.updateKey(oldName, newName);
+	}
+	
 	// Add new member to the group
 	public void addMember(String name, String id) {
-		System.out.println("IN");
 		jedis.addMember(name, id);
+		groupsModel.addElement(name);
 		
 		List<String> groupList;
 		if (!userGroupMap.containsKey(id)) {

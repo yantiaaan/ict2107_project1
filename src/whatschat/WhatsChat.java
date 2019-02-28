@@ -526,7 +526,7 @@ public class WhatsChat extends JFrame {
 					sleep();
 					
 					if (!group.isGroupNameTaken()) {
-						network.sendBroadcastMessage("UpdateGroupName:" + oldGroupName + ":" + newGroupName);
+						network.sendBroadcastMessage("UpdateGroupName:" + oldGroupName + ":" + newGroupName + ":" + user.getUser());
 						JOptionPane.showMessageDialog(main,  "Group has been updated successfully", "Success", JOptionPane.PLAIN_MESSAGE);
 					} else {
 						JOptionPane.showMessageDialog(main, "Group name has been taken", "Error", JOptionPane.ERROR_MESSAGE);
@@ -904,9 +904,8 @@ public class WhatsChat extends JFrame {
 			            	
 			            	// [Group Name] [User ID]
 			            	case "DeleteMember":
-			            		group.removeMember(split[1], split[2]);
-			            		
 			            		if (user.getUser().equals(split[2])) {
+			            			group.removeMember(split[1], split[2]);
 			            			user.setCurrentGroup(null);
 			            			JOptionPane.showMessageDialog(main, "You have been removed from " + split[1], "Removed", JOptionPane.PLAIN_MESSAGE);
 			            		}
@@ -930,11 +929,14 @@ public class WhatsChat extends JFrame {
 				            	network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
-			            	// [Old Group Name] [New Group Name]
+			            	// [Old Group Name] [New Group Name] [User ID]
 			            	case "UpdateGroupName":
 			            		if (user.getCurrentGroup().equals(split[1])) {
 			            			group.updateGroup(split[1], split[2], user.getUser());
 			            			user.setCurrentGroup(split[2]);
+			            		}
+			            		if (user.getUser().equals(split[3])) {
+			            			group.updateKey(split[1], split[2]);
 			            		}
 			            		network.sendBroadcastMessage("RefreshGroup");
 			        
