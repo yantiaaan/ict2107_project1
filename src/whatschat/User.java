@@ -28,6 +28,9 @@ public class User {
 	
 	public boolean isIdFormatValid(String id) {
 		return id.matches("^[a-zA-Z][.\\S]{0,7}");
+		
+	public void setPort(String Port) {
+		this.Port = Port;
 	}
 	
 	public void setCurrentGroup(String name) {
@@ -84,17 +87,6 @@ public class User {
 		if (friendsModel.contains(user)) {
 			friendsModel.removeElement(user);
 		}
-	}
-	
-	public boolean verifyIfUserExistInMyFriendList(String username) {
-
-		for (int i = 0; i < friendsModel.size(); i++) {
-			if (friendsModel.get(i).contains(username)) {
-				return true;
-			}
-		}
-		return false;
-
 	}
 	
 	public DefaultListModel<String> getAllUsers() {

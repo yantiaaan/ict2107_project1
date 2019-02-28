@@ -46,6 +46,8 @@ import javax.swing.JList;
 import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+
 public class WhatsChat extends JFrame {
 	
 	User user = new User();
@@ -138,12 +140,6 @@ public class WhatsChat extends JFrame {
 		
 		JMenuItem searchMsg = new JMenuItem("Search Message");
 		moreMenu.add(searchMsg);
-		
-		JMenuItem pinMsg = new JMenuItem("Add Pin Message");
-		moreMenu.add(pinMsg);
-		
-		JMenuItem delPinMsg = new JMenuItem("Remove Pin Message");
-		moreMenu.add(delPinMsg);
 		
 		
 		// User Menu - Edit User Frame
@@ -425,26 +421,6 @@ public class WhatsChat extends JFrame {
 				
 			}
 		});
-		/** -------------------------------------------------------- ADD PINNED MESSAGE ------------------------------------------------------------ **/
-		pinMsg.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String msgPin = JOptionPane.showInputDialog("Enter pin message: ");
-				if (!msgPin.isEmpty()) {
-					msgPin = "    [ [ PINNED MESSAGE ] ] : " + msgPin + "    ";
-					network.sendChatMessage(msgPin, user.getCurrentGroup());
-					getChat();
-				}
-			}
-		});
-		
-		/** -------------------------------------------------------- REMOVE PINNED MESSAGE ------------------------------------------------------------ **/
-		delPinMsg.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String remove = "REMOVE PINNED";
-				network.sendChatMessage(remove, user.getCurrentGroup());
-				getChat();
-			}
-		});
 		
 		/** -------------------------------------------------------- EDIT USER ------------------------------------------------------------ **/
 		editUser.addActionListener(new ActionListener() {
@@ -628,7 +604,7 @@ public class WhatsChat extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				btnSend.setEnabled(false);
 	            String list = listofUsersNotFriends.getSelectedValue();
-				if (user.verifyIfUserExistInMyFriendList(list)) {
+				if (verifyIfUserExistInMyFriendList(list)) {
 					JOptionPane.showMessageDialog(null, "Already added as friend!");
 					btnSend.setEnabled(true);
 				} else if (list.equals(user.getUser())) {
@@ -643,6 +619,7 @@ public class WhatsChat extends JFrame {
 						@Override
 						public void run() {
 							btnSend.setEnabled(true);
+				        	addFriendFrame.dispose();
 						}
 					}, 3000);
 				}
@@ -651,7 +628,48 @@ public class WhatsChat extends JFrame {
 		
 		
 		/** -------------------------------------------------------- REMOVE FRIENDS- -------------------------------------------------------- **/
-		
+		removeFriend.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (listFriends.getSelectedValue() == null) {
+					JOptionPane.showMessageDialog(null, "Please select a friend from friend list to delete",
+							"Message Dialog", JOptionPane.PLAIN_MESSAGE);
+				}
+				
+				else {
+					String msg = "DeleteFriend";
+					// to delete from user's name from the friend list of the deleted friend
+					// format is "DeleteFriend:deletedFriendName:myName"
+					msg = msg + ":" + listFriends.getSelectedValue() + ":" + user.getUser();
+					int index = findIndexOfFriend(listFriends.getSelectedValue());
+					int onlineListIndex = findIndexOfFriendInOnlineList(listFriends.getSelectedValue());
+					if (onlineListIndex > -1) {
+						listOfMyFriends.remove(onlineListIndex);
+					}
+					System.out.println(listFriends.getSelectedValue());
+					System.out.println("index of friend is" + onlineListIndex);
+					fullListOfMyFriends.remove(index);
+					friendsModel.removeElement(listFriends.getSelectedValue());
+					network.sendBroadcastMessage(msg);
+
+				}
+				
+				List<String> list = listFriends.getSelectedValuesList();
+				if (!list.isEmpty()) {
+					int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to delete the following friend: " + list + "?",
+							"Delete Friends(s)", JOptionPane.YES_NO_OPTION);
+					if (option == JOptionPane.YES_OPTION) {
+						for (int i = 0; i < list.size(); i++) {
+							// DeleteFriend:deletedfriendname:myusername
+							network.sendBroadcastMessage("DeleteFriend:" + list.get(i) + ":" + user.getUser());
+							System.out.println();
+						}
+					}
+				 else {
+					JOptionPane.showMessageDialog(main, "No friend(s) selected", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+	});
 		/** -------------------------------------------------------- TOGGLE ONLINE/OFFLINE- -------------------------------------------------------- **/
 
 		tglbtnStatus.addItemListener(new ItemListener() {
@@ -688,6 +706,20 @@ public class WhatsChat extends JFrame {
 				}
 			}
 		});
+		
+		
+		/** ----------------------------------- ONCLICK LISTFRIENDS ---------------------------------- **/
+		
+		listFriends.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent evt) {
+				List<String> list = listFriends.getSelectedValuesList();
+				if (evt.getClickCount() == 2 && list != null) {
+					// Double-click detected
+					txtMessage.setText("/m " + list.toString() + " ");
+				}
+			}
+		});
+					
 		
 		/** ----------------------------------- ONCLICK LISTGROUPS ---------------------------------- **/
 		listGroups.addMouseListener(new MouseAdapter() {
@@ -929,7 +961,8 @@ public class WhatsChat extends JFrame {
 			            		group.getAllUsersByGroup(user.getCurrentGroup());
 			            		group.getAllGroupsByUserId(user.getUser());
 			            		break;
-			            			            	
+			            	
+			            	// [Current user : User being added]
 			            	case "AddFriend":
 			            		// Addfriend:current user: user being added
 			            		if (split[2].equals(user.getUser())) {
@@ -942,7 +975,7 @@ public class WhatsChat extends JFrame {
 			            				tempUser.setUser(split[1]);
 			            				listOfMyFriends.add(tempUser);
 			            				fullListOfMyFriends.add(tempUser);
-			            				int pos = tempUser.getAllFriends().getSize();
+			            				int pos = friendsModel.getSize();
 			            				friendsModel.add(pos, tempUser.getUser());
 			            			} else {
 			            				replyRequest = "Rejected";
@@ -963,8 +996,7 @@ public class WhatsChat extends JFrame {
 			            					if (split[3].equals(user.getUser())) {
 			            						switch (split[1]) {
 			            						case "Accepted":
-			            							// if accepted, add to list. Not appended straight to text
-			            							// area
+			            							// if accepted, add to list. Not appended straight to text area
 			            							// to prevent cases of friends in the middle quitting
 			            							User tempUser = new User();
 			            							tempUser.setUser(split[2]);
@@ -980,15 +1012,31 @@ public class WhatsChat extends JFrame {
 			            						}
 			            					}		
 			            		break;
+
+				            	
+				            	// [FriendName:MyName]	
+				            	case "DeleteFriend":
+				            		if (split[1].equals(user.getUser())) {
+				            							            		
+				        				int index = findIndexOfFriend(split[2]);
+				        				// different index in online list as sequence might be different
+				        				int onlineListIndex = findIndexOfFriendInOnlineList(split[2]);
+				        				if (onlineListIndex > -1) {
+				        					listOfMyFriends.remove(onlineListIndex);
+				        				}
+				        				fullListOfMyFriends.remove(index);
+				        				friendsModel.removeElement(split[2]);
+				            		}
+				            		break;
 			            		
 			            }
 			            
 			            lblUserID.setText(user.getUser());
 			            lblUserDescription.setText(user.getDescription(user.getUser()));
 			            lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
-			            lblOnlineFriends.setText(user.getAllFriends().getSize() + " Online Friends");
+			            lblOnlineFriends.setText(friendsModel.getSize() + " Online Friends");
 	         
-			            if (user.getCurrentGroup() != null) {
+			            if (user.getCurrentGroup() != null || friendsModel != null) {
 			            	addMember.setEnabled(true);
 			            	deleteMember.setEnabled(true);
 			            	editGroup.setEnabled(true);
@@ -997,7 +1045,6 @@ public class WhatsChat extends JFrame {
 			            	txtMessage.setEnabled(true);
 			        		btnSend.setEnabled(true);
 			        		searchMsg.setEnabled(true);
-			        		pinMsg.setEnabled(true);
 			        		
 			        		lblCurrentGroup.setText("Group Name: " + user.getCurrentGroup());
 			            } else {
@@ -1009,7 +1056,6 @@ public class WhatsChat extends JFrame {
 			            	txtMessage.setEnabled(false);
 			        		btnSend.setEnabled(false);
 			        		searchMsg.setEnabled(false);
-			        		pinMsg.setEnabled(false);
 			        		
 			        		lblCurrentGroup.setText("Group Name: ");
 			            }
@@ -1060,37 +1106,7 @@ public class WhatsChat extends JFrame {
 						byte[] receivedData = dgpReceived.getData();
 						int length = dgpReceived.getLength();
 						String msg = new String(receivedData, 0, length);
-						
-						if(msg.contains("PINNED MESSAGE")) {
-							String conversation = textArea.getText();
-							String [] line = conversation.split("\\\n");
-							//if already have a pinned msg
-							if (line[0].contains("PINNED MESSAGE")) {
-								line[0]=msg ;
-								textArea.setText(" ");
-								for(String c : line) {
-									textArea.append(c + System.getProperty("line.separator"));
-								}
-							}
-							//else new pin msg
-							else {
-								textArea.setText(msg + "\n" + textArea.getText());
-							}
-							
-						}
-						else if(msg.contains("REMOVE PINNED")) {
-							String conversationR = textArea.getText();
-							String [] lineR = conversationR.split("\\\n");
-							lineR[0] = "";
-							textArea.setText(" ");
-							for(int i=1; i<lineR.length; i++) {
-								textArea.append(lineR[i] + System.getProperty("line.separator"));
-							}
-						}
-						else {
-							 textArea.append(msg + "\n");
-						}
-
+						textArea.append(msg + "\n");
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
@@ -1099,6 +1115,39 @@ public class WhatsChat extends JFrame {
 		}).start();
 	}
 	
+	public int findIndexOfFriend(String username) {
+
+		for (int i = 0; i < fullListOfMyFriends.size(); i++) {
+			if (fullListOfMyFriends.get(i).getUser().equals(username)) {
+				return i;
+			}
+		}
+		return -1;
+
+	}
+	
+	public int findIndexOfFriendInOnlineList(String username) {
+
+		for (int i = 0; i < listOfMyFriends.size(); i++) {
+			if (listOfMyFriends.get(i).getUser().equals(username)) {
+				return i;
+			}
+		}
+		return -1;
+
+	}
+	
+	public boolean verifyIfUserExistInMyFriendList(String username) {
+
+		for (int i = 0; i < friendsModel.size(); i++) {
+			if (friendsModel.get(i).contains(username)) {
+				return true;
+			}
+		}
+		return false;
+
+	}
+		
 	public void getAllMessages() {
 		List<String> messageList = jedis.getMessages(user.getCurrentGroup());
 		if (messageList != null) {
@@ -1108,6 +1157,12 @@ public class WhatsChat extends JFrame {
 			}
 		}
 	}
+	
+	public void debugMsg(String msg)// Purpose is to help you view msg easier by
+	// appending it to the chat group/s msg
+{
+textArea.append("Console Msg " + msg + "\n");
+}
 	
 	public void clearChat() {
 		textArea.setText("");
