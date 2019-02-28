@@ -114,6 +114,15 @@ public class Group {
 		userGroupMap.put(id, groupList);
 	}
 	
+	public void removeUserFromAllGroups(String id) {
+		List<String> groupList = userGroupMap.get(id);
+		if (groupList != null) {
+			for (int i = 0; i < groupList.size(); i++) {
+				jedis.removeMember(groupList.get(i), id);
+			}
+		}
+	}
+	
 	public void updateMember(String oldId, String newId) {
 		List<String> groupList = userGroupMap.get(oldId);
 		userGroupMap.put(newId, groupList);
@@ -156,7 +165,6 @@ public class Group {
 	public DefaultListModel<String> getAllUsersByGroup(String name) {
 		groupMembersModel.clear();
 		List<String> membersList = jedis.getMembers(name);
-		
 		if (membersList != null) {
 			for (int i = 0; i < membersList.size(); i++) {
 				groupMembersModel.addElement(membersList.get(i));

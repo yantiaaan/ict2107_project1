@@ -319,6 +319,7 @@ public class WhatsChat extends JFrame {
 		main.addWindowListener(new WindowAdapter() {
 	        @Override
 	        public void windowClosing(WindowEvent e) {
+	        	group.removeUserFromAllGroups(user.getUser());
 	        	network.sendBroadcastMessage("RemoveUser:" + user.getUser());
 	        	if (user.getAllUsers().getSize() == 0) {
 	        		jedis.flush();
@@ -700,6 +701,7 @@ public class WhatsChat extends JFrame {
 			            	// [User ID]
 			            	case "RemoveUser":
 			            		user.removeUser(split[1]);
+			            		network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            	
 			            	// [Old User ID] [New User ID] [New User Description]
@@ -780,8 +782,8 @@ public class WhatsChat extends JFrame {
 			            	case "LeaveGroup":
 			            		if (user.getUser().equals(split[2])) {
 			            			user.setCurrentGroup(null);
+				            		group.removeMember(split[1], split[2]);
 			            		}
-			            		group.removeMember(split[1], split[2]);
 			            		network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
@@ -836,8 +838,7 @@ public class WhatsChat extends JFrame {
 			            }
 			            else {
 			            	delPinMsg.setEnabled(false);
-			            }
-			            
+			            } 
 			            
 					} catch (IOException ex) {
 						ex.printStackTrace();
