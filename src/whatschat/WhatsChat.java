@@ -924,7 +924,9 @@ public class WhatsChat extends JFrame {
 			            		
 			            	// [Group Name] [IP Address] [Creator's User ID]
 			            	case "CreateGroup":
-			            		group.addGroup(split[1], split[2], split[3]);
+			            		if (user.getUser().equals(split[3])) {
+			            			group.addGroup(split[1], split[2], split[3]);
+			            		}
 				            	network.sendBroadcastMessage("RefreshGroup");
 			            		break;
 			            		
@@ -1036,7 +1038,7 @@ public class WhatsChat extends JFrame {
 			            lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
 			            lblOnlineFriends.setText(friendsModel.getSize() + " Online Friends");
 	         
-			            if (user.getCurrentGroup() != null || friendsModel != null) {
+			            if (user.getCurrentGroup() != null && friendsModel != null) {
 			            	addMember.setEnabled(true);
 			            	deleteMember.setEnabled(true);
 			            	editGroup.setEnabled(true);
@@ -1059,13 +1061,6 @@ public class WhatsChat extends JFrame {
 			        		
 			        		lblCurrentGroup.setText("Group Name: ");
 			            }
-			            
-			            if(textArea.getText().contains("PINNED MESSAGE")){
-			            	delPinMsg.setEnabled(true);
-			            }
-			            else {
-			            	delPinMsg.setEnabled(false);
-			            } 
 			            
 					} catch (IOException ex) {
 						ex.printStackTrace();
@@ -1160,9 +1155,9 @@ public class WhatsChat extends JFrame {
 	
 	public void debugMsg(String msg)// Purpose is to help you view msg easier by
 	// appending it to the chat group/s msg
-{
-textArea.append("Console Msg " + msg + "\n");
-}
+	{
+		textArea.append("Console Msg " + msg + "\n");
+	}
 	
 	public void clearChat() {
 		textArea.setText("");

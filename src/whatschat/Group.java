@@ -93,6 +93,7 @@ public class Group {
 	
 	// Add new member to the group
 	public void addMember(String name, String id) {
+		System.out.println("IN");
 		jedis.addMember(name, id);
 		
 		List<String> groupList;
