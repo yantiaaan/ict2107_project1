@@ -609,6 +609,29 @@ public class WhatsChat extends JFrame {
 		/** -------------------------------------------------------- REMOVE FRIENDS- -------------------------------------------------------- **/
 		removeFriend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (listFriends.getSelectedValue() == null) {
+					JOptionPane.showMessageDialog(null, "Please select a friend from friend list to delete",
+							"Message Dialog", JOptionPane.PLAIN_MESSAGE);
+				}
+				
+				else {
+					String msg = "DeleteFriend";
+					// to delete from user's name from the friend list of the deleted friend
+					// format is "DeleteFriend:deletedFriendName:myName"
+					msg = msg + ":" + listFriends.getSelectedValue() + ":" + user.getUser();
+					int index = findIndexOfFriend(listFriends.getSelectedValue());
+					int onlineListIndex = findIndexOfFriendInOnlineList(listFriends.getSelectedValue());
+					if (onlineListIndex > -1) {
+						listOfMyFriends.remove(onlineListIndex);
+					}
+					System.out.println(listFriends.getSelectedValue());
+					System.out.println("index of friend is" + onlineListIndex);
+					fullListOfMyFriends.remove(index);
+					friendsModel.removeElement(listFriends.getSelectedValue());
+					network.sendBroadcastMessage(msg);
+
+				}
+				
 				List<String> list = listFriends.getSelectedValuesList();
 				if (!list.isEmpty()) {
 					int option = JOptionPane.showConfirmDialog(main, "Are you sure you want to delete the following friend: " + list + "?",
@@ -617,13 +640,15 @@ public class WhatsChat extends JFrame {
 						for (int i = 0; i < list.size(); i++) {
 							// DeleteFriend:deletedfriendname:myusername
 							network.sendBroadcastMessage("DeleteFriend:" + list.get(i) + ":" + user.getUser());
+							System.out.println();
 						}
 					}
-				} else {
+				 else {
 					JOptionPane.showMessageDialog(main, "No friend(s) selected", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
-		});
+		}
+	});
 		/** -------------------------------------------------------- TOGGLE ONLINE/OFFLINE- -------------------------------------------------------- **/
 
 		tglbtnStatus.addItemListener(new ItemListener() {
@@ -930,7 +955,7 @@ public class WhatsChat extends JFrame {
 			            				tempUser.setUser(split[1]);
 			            				listOfMyFriends.add(tempUser);
 			            				fullListOfMyFriends.add(tempUser);
-			            				int pos = tempUser.getAllFriends().getSize();
+			            				int pos = friendsModel.getSize();
 			            				friendsModel.add(pos, tempUser.getUser());
 			            			} else {
 			            				replyRequest = "Rejected";
@@ -951,8 +976,7 @@ public class WhatsChat extends JFrame {
 			            					if (split[3].equals(user.getUser())) {
 			            						switch (split[1]) {
 			            						case "Accepted":
-			            							// if accepted, add to list. Not appended straight to text
-			            							// area
+			            							// if accepted, add to list. Not appended straight to text area
 			            							// to prevent cases of friends in the middle quitting
 			            							User tempUser = new User();
 			            							tempUser.setUser(split[2]);
@@ -973,17 +997,16 @@ public class WhatsChat extends JFrame {
 				            	// [FriendName:MyName]	
 				            	case "DeleteFriend":
 				            		if (split[1].equals(user.getUser())) {
-				            			
-				            		}
-				        				int index = findIndexOfFriend(split[1]);
+				            							            		
+				        				int index = findIndexOfFriend(split[2]);
 				        				// different index in online list as sequence might be different
 				        				int onlineListIndex = findIndexOfFriendInOnlineList(split[2]);
 				        				if (onlineListIndex > -1) {
 				        					listOfMyFriends.remove(onlineListIndex);
 				        				}
-				        				friendsModel.remove(index);
+				        				fullListOfMyFriends.remove(index);
 				        				friendsModel.removeElement(split[2]);
-				        			
+				            		}
 				            		break;
 			            		
 			            }
@@ -1108,6 +1131,12 @@ public class WhatsChat extends JFrame {
 			}
 		}
 	}
+	
+	public void debugMsg(String msg)// Purpose is to help you view msg easier by
+	// appending it to the chat group/s msg
+{
+textArea.append("Console Msg " + msg + "\n");
+}
 	
 	public void clearChat() {
 		textArea.setText("");
