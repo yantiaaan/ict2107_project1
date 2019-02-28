@@ -54,6 +54,7 @@ public class Network {
 		}
 	}
 	
+	// Performsendtomain
 	public void sendChatMessage(String msg, String name) {
 		try {
 			byte[] buf = msg.getBytes();

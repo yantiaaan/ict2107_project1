@@ -6,6 +6,8 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -18,14 +20,18 @@ import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
@@ -38,7 +44,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JTextArea;
-
+import javax.swing.JToggleButton;
+import javax.swing.ListSelectionModel;
 public class WhatsChat extends JFrame {
 	
 	User user = new User();
@@ -46,6 +53,9 @@ public class WhatsChat extends JFrame {
 	Group group = new Group();
 	JedisDB jedis = new JedisDB();
 	
+	public DefaultListModel<String> friendsModel = new DefaultListModel<String>();
+	private ArrayList<User> listOfMyFriends = new ArrayList<User>();
+	private ArrayList<User> fullListOfMyFriends = new ArrayList<User>();
 	JTextArea textArea;
 	
 	public static void main(String[] args) {
@@ -60,6 +70,7 @@ public class WhatsChat extends JFrame {
 		});
 	}
 	
+	/** -------------------------------------------------------- SWITCH CASE VALIDATE ACTION- -------------------------------------------------------- **/
 	public WhatsChat() {
 		
 		network.connectBroadcast();
@@ -91,6 +102,7 @@ public class WhatsChat extends JFrame {
 		
 		JMenuItem editUser = new JMenuItem("Edit User");
 		userMenu.add(editUser);
+		
 		
 		JMenuItem addFriend = new JMenuItem("Add Friend(s)");
 		userMenu.add(addFriend);
@@ -183,6 +195,46 @@ public class WhatsChat extends JFrame {
 		btnCancel.setBounds(302, 200, 158, 29);
 		editPanel.add(btnCancel);
 		
+		// Add friend menu
+		JFrame addFriendFrame = new JFrame();
+		addFriendFrame.setVisible(false);
+		addFriendFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		addFriendFrame.setBounds(100, 100, 300, 300);
+		
+		JPanel addFriendPanel = new JPanel();
+		addFriendPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+		addFriendFrame.setContentPane(addFriendPanel);
+		addFriendPanel.setLayout(null);
+		
+		JLabel lblUsers = new JLabel("User List:");
+		lblUsers.setBounds(15, 16, 102, 20);
+		addFriendFrame.getContentPane().add(lblUsers);
+		
+		JList<String> listofUsersNotFriends = new JList<String>(user.getAllUsers());
+		JScrollPane listFriendsScr = new JScrollPane(listofUsersNotFriends, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		listFriendsScr.setBounds(100, 16, 102, 150);
+		addFriendFrame.getContentPane().add(listFriendsScr);
+		JButton btnAddFriend = new JButton("Add");
+		btnAddFriend.setBounds(60, 180, 143, 30);
+		addFriendFrame.getContentPane().add(btnAddFriend);
+		
+		// Display add friend pop up menu
+		addFriend.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				addFriendFrame.setVisible(true);
+				
+				addFriendFrame.addWindowListener(new WindowAdapter() {
+			        @Override
+			        public void windowClosing(WindowEvent e) {
+			        	addFriendFrame.dispose();
+			        }
+				});
+			}
+		});
+		
+		
+			
 		// Start of User Profile
 		JPanel userPanel = new JPanel();
 		userPanel.setBounds(15, 47, 320, 581);
@@ -215,7 +267,7 @@ public class WhatsChat extends JFrame {
 		friendTab.setLayout(null);
 		tabbedPane.add("Friends", friendTab);
 		
-		JList<String> listFriends = new JList<String>(user.getAllUsers());
+		JList<String> listFriends = new JList<String>(friendsModel);
 		listFriends.setBounds(15, 51, 255, 280);
 		friendTab.add(listFriends);
 		
@@ -247,6 +299,10 @@ public class WhatsChat extends JFrame {
 		lblOnlineUsers.setBounds(15, 16, 255, 20);
 		userTab.add(lblOnlineUsers);
 		
+		JToggleButton tglbtnStatus= new JToggleButton("Status: Online");
+		tglbtnStatus.setBounds(132, 136, 163, 29);
+		userPanel.add(tglbtnStatus);
+   
 		// User Tab - User Profile Frame 
 		JFrame profileFrame = new JFrame();
         profileFrame.setVisible(false);
@@ -547,6 +603,60 @@ public class WhatsChat extends JFrame {
 			}
 		});
 		
+		/** -------------------------------------------------------- ADD FRIENDS - -------------------------------------------------------- **/
+		btnAddFriend.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				btnSend.setEnabled(false);
+	            String list = listofUsersNotFriends.getSelectedValue();
+				if (user.verifyIfUserExistInMyFriendList(list)) {
+					JOptionPane.showMessageDialog(null, "Already added as friend!");
+					btnSend.setEnabled(true);
+				} else if (list.equals(user.getUser())) {
+					JOptionPane.showMessageDialog(null, "You can't add yourself!");
+					btnSend.setEnabled(true);
+				} else {
+					// AddFriend command with current user and adding user
+					String msg = ("AddFriend:" + user.getUser() + ":" + list);
+					network.sendBroadcastMessage(msg);
+					Timer buttonTimer = new Timer();
+					buttonTimer.schedule(new TimerTask() {
+						@Override
+						public void run() {
+							btnSend.setEnabled(true);
+						}
+					}, 3000);
+				}
+			}
+		});
+		
+		
+		/** -------------------------------------------------------- REMOVE FRIENDS- -------------------------------------------------------- **/
+		
+		/** -------------------------------------------------------- TOGGLE ONLINE/OFFLINE- -------------------------------------------------------- **/
+
+		tglbtnStatus.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					tglbtnStatus.setText("Status: Offline");
+					
+					// format "O/OnlineOrOffline/myName/myPort"
+					String msg = "O?";
+					//msg = msg + "/" + "Offline" + "/" + user.getName() + "/" + user.getPort();
+					//performSendToMain(msg);
+				} else if (e.getStateChange() == ItemEvent.DESELECTED) {
+					tglbtnStatus.setText("Online");
+
+					// format "O/OnlineOrOffline/myName/myPort"
+					String msg = "O?";
+					//msg = msg + "/" + "Online" + "/" + user.getName() + "/" + user.getPort();
+					//performSendToMain(msg);
+				}
+
+			}
+
+		});
+		
 		/** -------------------------------------------------------- SEND MESSAGE- -------------------------------------------------------- **/
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -801,12 +911,65 @@ public class WhatsChat extends JFrame {
 			            		group.getAllUsersByGroup(user.getCurrentGroup());
 			            		group.getAllGroupsByUserId(user.getUser());
 			            		break;
+			            			            	
+			            	case "AddFriend":
+			            		// Addfriend:current user: user being added
+			            		if (split[2].equals(user.getUser())) {
+			            			String replyRequest;
+			            			int answer = JOptionPane.showConfirmDialog(null, "Do you want to want accept friend invitation from "+split[1],
+			            					"Hi "+user.getUser(), JOptionPane.YES_NO_OPTION);
+			            			if (answer == 0) {
+			            				replyRequest = "Accepted";
+			            				User tempUser = new User();
+			            				tempUser.setUser(split[1]);
+			            				listOfMyFriends.add(tempUser);
+			            				fullListOfMyFriends.add(tempUser);
+			            				int pos = tempUser.getAllFriends().getSize();
+			            				friendsModel.add(pos, tempUser.getUser());
+			            			} else {
+			            				replyRequest = "Rejected";
+			            			}
+			            			replyRequest = "A!:" + replyRequest + ":" + user.getUser() + ":" + split[1];
+			            			network.sendBroadcastMessage(replyRequest);
+			            			
+			            		}
+			            		
+			            		
+			            		break;
+			            		
+			            	case "A!":
+			            		// Once accepted 
+			            		// Addfriend:current user: user being added
+			            		// reply format "A!/acceptOrReject/FriendName/myName"
+
+			            					if (split[3].equals(user.getUser())) {
+			            						switch (split[1]) {
+			            						case "Accepted":
+			            							// if accepted, add to list. Not appended straight to text
+			            							// area
+			            							// to prevent cases of friends in the middle quitting
+			            							User tempUser = new User();
+			            							tempUser.setUser(split[2]);
+			            							listOfMyFriends.add(tempUser);
+			            							fullListOfMyFriends.add(tempUser);
+			            							int pos = friendsModel.getSize();
+			            							friendsModel.add(pos, tempUser.getUser());
+			            							break;
+			            						case "Rejected":
+			            							JOptionPane.showMessageDialog(null, "Your friend Request Was Rejected!", "Hi "+user.getUser(),
+			            									JOptionPane.PLAIN_MESSAGE);
+			            							break;
+			            						}
+			            					}		
+			            		break;
+			            		
 			            }
 			            
 			            lblUserID.setText(user.getUser());
 			            lblUserDescription.setText(user.getDescription(user.getUser()));
 			            lblOnlineUsers.setText(user.getAllUsers().getSize() + " Online Users");
-			            	         
+			            lblOnlineFriends.setText(user.getAllFriends().getSize() + " Online Friends");
+	         
 			            if (user.getCurrentGroup() != null) {
 			            	addMember.setEnabled(true);
 			            	deleteMember.setEnabled(true);
