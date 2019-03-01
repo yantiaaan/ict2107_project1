@@ -447,8 +447,10 @@ public class WhatsChat extends JFrame {
 						if (txtEditName.getText().isEmpty()) {
 							lblNameError.setText("User ID cannot be blank");
 						} else {
-							network.sendBroadcastMessage("CheckUserID:" + txtEditName.getText());
-							sleep();
+							if (!user.getUser().equals(txtEditName.getText())) {
+								network.sendBroadcastMessage("CheckUserID:" + txtEditName.getText());
+								sleep();
+							}
 							
 							if (user.isUserIdTaken()) {
 								lblNameError.setText("User ID has been taken");
@@ -463,7 +465,7 @@ public class WhatsChat extends JFrame {
 										try {
 											File img = new File(lblImageUrl.getText());
 											bImage = ImageIO.read(img);
-											ImageIO.write(bImage, "png", new File(System.getProperty("user.dir") + "\\img\\" + user.getUser() + ".png"));
+											ImageIO.write(bImage, "png", new File(System.getProperty("user.dir") + "\\img\\" + txtEditName.getText() + ".png"));
 										} catch (IOException ie) {
 											System.out.println("Exception occured :" + ie.getMessage());
 										}
@@ -933,7 +935,7 @@ public class WhatsChat extends JFrame {
 			            		
 			            	// [Old Group Name] [New Group Name] [User ID]
 			            	case "UpdateGroupName":
-			            		if (user.getCurrentGroup().equals(split[1])) {
+			            		if (user.getCurrentGroup() != null && user.getCurrentGroup().equals(split[1])) {
 			            			group.updateGroup(split[1], split[2], user.getUser());
 			            			user.setCurrentGroup(split[2]);
 			            		}
@@ -957,10 +959,9 @@ public class WhatsChat extends JFrame {
 			            	case "DeleteGroup":
 			            		if (user.getCurrentGroup().equals(split[1])) {
 			            			user.setCurrentGroup(null);
+			            			group.removeGroup(split[1], user.getUser());
 			            			clearChat();
 			            		}
-			            		group.removeGroup(split[1]);
-			            		
 			            		if (user.getUser().equals(split[2])) {
 			            			group.removeKey(split[1]);
 			            		}

@@ -41,7 +41,9 @@ public class Group {
 			jedis.addMember(name, id);
 		
 			List<String> groupList;
-			if (!userGroupMap.containsKey(id)) {
+
+			System.out.println(userGroupMap);
+			if (!userGroupMap.containsKey(id) || userGroupMap.get(id) == null) {
 				groupList = new ArrayList<>();
 			} else {
 				groupList = userGroupMap.get(id);
@@ -52,20 +54,14 @@ public class Group {
 		}
 	}
 	
-	public void removeGroup(String name) {
+	public void removeGroup(String name, String id) {
 		if (groupsModel.contains(name)) {
 			groupsModel.removeElement(name);
 			
-			List<String> userList = jedis.getMembers(name);
-			if (userList != null) {
-				for (int i = 0; i < userList.size(); i++) {
-					List<String> groupList = userGroupMap.get(userList.get(i));
-					groupList.remove(name);
-					
-					userGroupMap.remove(userList.get(i));
-					userGroupMap.put(userList.get(i), groupList);
-				}
-			}
+			List<String> groupList = userGroupMap.get(id);
+			groupList.remove(name);
+			userGroupMap.remove(id);
+			userGroupMap.put(id, groupList);
 		}
 	}
 	
